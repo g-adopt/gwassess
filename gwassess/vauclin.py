@@ -4,6 +4,15 @@ Reference:
     Vauclin, M., Khanji, D., & Vachaud, G. (1979). Experimental and numerical study
     of a transient, two-dimensional unsaturated-saturated water table recharge problem.
     Water Resources Research, 15(5), 1089-1101.
+    https://doi.org/10.1029/WR015i005p01089
+
+The problem simulates recharge of a 2D water table in a domain of 3 x 2 metres.
+The initial condition has the region z <= 0.65 m fully saturated (h = z - 0.65).
+Boundary conditions:
+  - Bottom and left: no flux (q · n = 0)
+  - Right: fixed water table height (h = z - 0.65 m)
+  - Top: water injection at 14.8 cm/hour for x <= 0.5 m, zero otherwise
+The simulation runs for 8 hours.
 """
 from __future__ import division
 from math import tanh
@@ -15,24 +24,43 @@ class VauclinRichardsSolution2D(object):
     This is a numerical benchmark problem without a closed-form analytical solution.
     The class provides the standard problem setup including initial conditions,
     boundary conditions, and soil parameters as specified in the original paper.
+
+    The Haverkamp soil hydraulic model parameters are taken from:
+        Haverkamp, R., et al. (1977). A comparison of numerical simulation models
+        for one-dimensional infiltration. Soil Science Society of America Journal.
     """
 
-    def __init__(self, Lx=3.0, Ly=2.0, theta_r=0.10, theta_s=0.37,
+    # Water table height from bottom of domain [m]
+    WATER_TABLE_HEIGHT = 0.65
+
+    # Infiltration rate from original paper: 14.8 cm/hr = 4.11e-05 m/s
+    INFILTRATION_RATE = 14.8 / 100 / 3600  # m/s
+
+    # Infiltration zone width: x <= 0.5 m
+    INFILTRATION_WIDTH = 0.5
+
+    # Simulation duration: 8 hours
+    SIMULATION_DURATION = 8 * 3600  # seconds
+
+    def __init__(self, Lx=3.0, Ly=2.0, theta_r=0.01, theta_s=0.37,
                  alpha=0.44, beta=1.2924, A=0.0104, gamma=1.5722,
-                 Ks=5e-05, Ss=1e-05):
+                 Ks=9.722e-05, Ss=0.0):
         """Initialize Vauclin 2D Richards reference solution.
+
+        Default parameters match the original Vauclin (1979) paper with
+        Haverkamp soil model parameters.
 
         Args:
             Lx: Domain length in x-direction [L] (default: 3.0 m)
             Ly: Domain length in y-direction [L] (default: 2.0 m)
-            theta_r: Residual water content [-] (default: 0.10)
+            theta_r: Residual water content [-] (default: 0.01)
             theta_s: Saturated water content [-] (default: 0.37)
-            alpha: Haverkamp model parameter (default: 0.44)
-            beta: Haverkamp model parameter (default: 1.2924)
-            A: Haverkamp model parameter (default: 0.0104)
-            gamma: Haverkamp model parameter (default: 1.5722)
-            Ks: Saturated hydraulic conductivity [L/T] (default: 5e-05 m/s)
-            Ss: Specific storage coefficient [1/L] (default: 1e-05 1/m)
+            alpha: Haverkamp model parameter [m] (default: 0.44)
+            beta: Haverkamp model parameter [-] (default: 1.2924)
+            A: Haverkamp model parameter [m] (default: 0.0104)
+            gamma: Haverkamp model parameter [-] (default: 1.5722)
+            Ks: Saturated hydraulic conductivity [L/T] (default: 9.722e-05 m/s = 35 cm/hr)
+            Ss: Specific storage coefficient [1/L] (default: 0.0)
         """
         self.Lx = Lx
         self.Ly = Ly
@@ -48,51 +76,76 @@ class VauclinRichardsSolution2D(object):
     def initial_condition(self, x, y):
         """Return initial pressure head.
 
+        The initial condition represents a water table at z = 0.65 m from the bottom.
+        Below the water table (y <= 0.65 m), the soil is fully saturated with h = y - 0.65.
+        Above the water table, h < 0 (unsaturated). The 1.001 factor provides a slight
+        offset to ensure the domain starts slightly unsaturated at the water table.
+
+        Args:
+            x: x-coordinate [L]
+            y: y-coordinate [L] (vertical, 0 at bottom)
+
+        Returns:
+            Initial pressure head h [L]
+        """
+        return self.WATER_TABLE_HEIGHT - 1.001 * y
+
+    def right_boundary_head(self, x, y):
+        """Return pressure head at right boundary (fixed water table).
+
+        The right boundary maintains the initial water table position.
+
         Args:
             x: x-coordinate [L]
             y: y-coordinate [L]
 
         Returns:
-            Initial pressure head h [L]
+            Pressure head h [L]
         """
-        return -10.0
+        return self.WATER_TABLE_HEIGHT - 1.001 * y
 
     def top_boundary_flux(self, x, t):
         """Return top boundary flux as a function of position and time.
 
         This implements a time-dependent infiltration flux that is localized
-        in space using smooth tanh transitions.
+        in space using smooth tanh transitions. Water is injected at a rate of
+        14.8 cm/hour in the region x <= 0.5 m (using smooth transitions).
 
         Args:
             x: x-coordinate [L]
             t: time [T]
 
         Returns:
-            Flux q [L/T] (positive downward)
+            Flux q [L/T] (positive into domain, i.e., downward)
         """
-        # Time-dependent ramp-up
-        time_factor = tanh(0.0005 * t)
+        # Time-dependent ramp-up (smooth start)
+        time_factor = tanh(0.000125 * t)
 
-        # Spatial localization: flux applied in central region
-        spatial_factor = (0.5 * (1 + tanh(10 * (x + 0.5)))
-                          - 0.5 * (1 + tanh(10 * (x - 0.5))))
+        # Spatial localization: flux applied for x in [-0.5, 0.5]
+        # Using smooth tanh transitions for numerical stability
+        spatial_factor = (0.5 * (1 + tanh(10 * (x + self.INFILTRATION_WIDTH)))
+                          - 0.5 * (1 + tanh(10 * (x - self.INFILTRATION_WIDTH))))
 
-        return time_factor * 2e-05 * spatial_factor
+        return time_factor * self.INFILTRATION_RATE * spatial_factor
 
-    def get_boundary_conditions(self, t):
+    def get_boundary_conditions(self, t=None):
         """Return boundary condition specification.
 
+        From the original paper:
+        - Bottom and left: no flux (q · n = 0)
+        - Right: fixed water table height (h = z - 0.65 m)
+        - Top: water injection at 14.8 cm/hour for x <= 0.5 m
+
         Args:
-            t: current time [T]
+            t: current time [T] (optional, for compatibility)
 
         Returns:
             Dictionary describing boundary conditions for each boundary ID.
             Format: {boundary_id: {'type': 'flux' or 'h', 'value': ...}}
         """
-        # Standard boundary IDs: left=1, right=2, bottom=3, top=4
         return {
             'left': {'type': 'flux', 'value': 0.0},
-            'right': {'type': 'flux', 'value': 0.0},
+            'right': {'type': 'h', 'value': 'initial_condition'},
             'bottom': {'type': 'flux', 'value': 0.0},
             'top': {'type': 'flux', 'value': 'time_and_space_dependent'}
         }
