@@ -1,7 +1,8 @@
 """Unit tests for gwassess solution classes."""
 import unittest
 import numpy as np
-from gwassess import TracyRichardsSolution2D, VauclinRichardsSolution2D, CockettRichardsSolution3D
+from gwassess import (TracyRichardsSolution2D, TracyRichardsSolution3D,
+                      VauclinRichardsSolution2D, CockettRichardsSolution3D)
 
 
 class TestTracySolution(unittest.TestCase):
@@ -58,6 +59,74 @@ class TestTracySolution(unittest.TestCase):
         self.assertLess(theta_unsat, self.solution.theta_s)
 
         # Saturated
+        theta_sat = self.solution.moisture_content(0.5)
+        self.assertEqual(theta_sat, self.solution.theta_s)
+
+
+class TestTracySolution3D(unittest.TestCase):
+    """Test Tracy 3D analytical solution."""
+
+    def setUp(self):
+        """Set up Tracy 3D solution with standard parameters."""
+        self.solution = TracyRichardsSolution3D(
+            alpha=0.328,
+            hr=-15.24,
+            L=15.24,
+            theta_r=0.15,
+            theta_s=0.45,
+            Ks=1.0e-05
+        )
+
+    def test_instantiation(self):
+        """Test that solution can be instantiated."""
+        self.assertIsNotNone(self.solution)
+        self.assertEqual(self.solution.alpha, 0.328)
+        self.assertEqual(self.solution.L, 15.24)
+
+    def test_boundary_values(self):
+        """Test that pressure head equals h_r at domain boundaries."""
+        L = self.solution.L
+        hr = self.solution.hr
+        t = 1e6  # Steady state
+        # x = 0 face
+        self.assertAlmostEqual(self.solution.pressure_head(0, L/2, L/2, t), hr, places=4)
+        # y = 0 face
+        self.assertAlmostEqual(self.solution.pressure_head(L/2, 0, L/2, t), hr, places=4)
+        # z = 0 (bottom) face
+        self.assertAlmostEqual(self.solution.pressure_head(L/2, L/2, 0, t), hr, places=4)
+
+    def test_top_boundary_consistency(self):
+        """Test that steady-state solution at z=L matches the top BC."""
+        L = self.solution.L
+        x, y = L/4, L/3
+        top_bc = self.solution.steady_state_top_bc(x, y)
+        h_top = self.solution.pressure_head(x, y, L, 1e6)
+        self.assertAlmostEqual(h_top, top_bc, places=4)
+
+    def test_pressure_head_cartesian(self):
+        """Test Cartesian coordinate wrapper."""
+        X = [7.62, 7.62, 7.62]
+        t = 1e5
+        h1 = self.solution.pressure_head_cartesian(X, t)
+        h2 = self.solution.pressure_head(X[0], X[1], X[2], t)
+        self.assertAlmostEqual(h1, h2)
+
+    def test_transient_approaches_steady_state(self):
+        """Test that solution converges to steady state at large times."""
+        L = self.solution.L
+        h_early = self.solution.pressure_head(L/2, L/2, L/2, 1e5)
+        h_late = self.solution.pressure_head(L/2, L/2, L/2, 1e6)
+        h_very_late = self.solution.pressure_head(L/2, L/2, L/2, 1e7)
+        # Solution should be approaching steady state
+        self.assertAlmostEqual(h_late, h_very_late, places=4)
+        # Early time should be more negative (closer to h_r)
+        self.assertLess(h_early, h_late)
+
+    def test_moisture_content(self):
+        """Test moisture content calculation."""
+        theta_unsat = self.solution.moisture_content(-5.0)
+        self.assertGreater(theta_unsat, self.solution.theta_r)
+        self.assertLess(theta_unsat, self.solution.theta_s)
         theta_sat = self.solution.moisture_content(0.5)
         self.assertEqual(theta_sat, self.solution.theta_s)
 
