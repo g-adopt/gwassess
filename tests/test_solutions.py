@@ -131,8 +131,8 @@ class TestVauclinSolution(unittest.TestCase):
         self.assertIsInstance(params, dict)
         self.assertEqual(params['model_type'], 'Haverkamp')
         # Updated parameters matching Vauclin 1979 paper
-        self.assertEqual(params['theta_r'], 0.01)
-        self.assertEqual(params['theta_s'], 0.37)
+        self.assertEqual(params['theta_r'], 0.0)
+        self.assertEqual(params['theta_s'], 0.30)
         self.assertAlmostEqual(params['Ks'], 9.722e-05, places=8)
 
     def test_class_constants(self):
