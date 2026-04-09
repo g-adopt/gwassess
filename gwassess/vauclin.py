@@ -42,23 +42,34 @@ class VauclinRichardsSolution2D(object):
     # Simulation duration: 8 hours
     SIMULATION_DURATION = 8 * 3600  # seconds
 
-    def __init__(self, Lx=3.0, Ly=2.0, theta_r=0.01, theta_s=0.37,
-                 alpha=0.44, beta=1.2924, A=0.0104, gamma=1.5722,
+    def __init__(self, Lx=3.0, Ly=2.0, theta_r=0.0, theta_s=0.30,
+                 alpha=40000 / 100**2.90, beta=2.90,
+                 A=2.99e6 / 100**5.0, gamma=5.0,
                  Ks=9.722e-05, Ss=0.0):
         """Initialize Vauclin 2D Richards reference solution.
 
-        Default parameters match the original Vauclin (1979) paper with
-        Haverkamp soil model parameters.
+        Default parameters match the original Vauclin (1979) paper, Table/Eq. 1
+        (p. 1091) and Eq. 9 (p. 1093), converted from CGS (cm, hr) to SI (m, s).
+
+        The Haverkamp retention and conductivity curves are:
+            theta(h) = theta_s * alpha / (alpha + |h|^beta)
+            K(h)     = Ks * A / (A + |h|^gamma)
+
+        Paper values (h in cm): alpha = 40,000, beta = 2.90, A = 2.99e6,
+        gamma = 5.0, theta_s = 0.30, Ks = 35 cm/hr. Since alpha and A carry
+        units of [length]^exponent, the conversion to metres is:
+            alpha_m = 40,000 / 100^2.90
+            A_m     = 2.99e6 / 100^5.0
 
         Args:
             Lx: Domain length in x-direction [L] (default: 3.0 m)
             Ly: Domain length in y-direction [L] (default: 2.0 m)
-            theta_r: Residual water content [-] (default: 0.01)
-            theta_s: Saturated water content [-] (default: 0.37)
-            alpha: Haverkamp model parameter [m] (default: 0.44)
-            beta: Haverkamp model parameter [-] (default: 1.2924)
-            A: Haverkamp model parameter [m] (default: 0.0104)
-            gamma: Haverkamp model parameter [-] (default: 1.5722)
+            theta_r: Residual water content [-] (default: 0.0)
+            theta_s: Saturated water content [-] (default: 0.30)
+            alpha: Haverkamp retention parameter [m^beta] (default: 40000/100^2.90)
+            beta: Haverkamp retention exponent [-] (default: 2.90)
+            A: Haverkamp conductivity parameter [m^gamma] (default: 2.99e6/100^5.0)
+            gamma: Haverkamp conductivity exponent [-] (default: 5.0)
             Ks: Saturated hydraulic conductivity [L/T] (default: 9.722e-05 m/s = 35 cm/hr)
             Ss: Specific storage coefficient [1/L] (default: 0.0)
         """
