@@ -174,6 +174,16 @@ class TestCockettSolution(unittest.TestCase):
         self.assertIsInstance(h0, (float, np.floating))
         # Should be negative (unsaturated)
         self.assertLess(h0, 0)
+        # At top (z=Lz), IC should match top BC: h = -0.1
+        self.assertAlmostEqual(
+            self.solution.initial_condition(1.0, 1.0, self.solution.Lz),
+            -0.1, places=10
+        )
+        # Deep in the domain, IC should approach -0.3 (matches bottom BC)
+        self.assertAlmostEqual(
+            self.solution.initial_condition(1.0, 1.0, 0.0),
+            -0.3, places=5
+        )
 
     def test_get_boundary_conditions(self):
         """Test boundary condition retrieval."""
@@ -181,8 +191,12 @@ class TestCockettSolution(unittest.TestCase):
         self.assertIsInstance(bcs, dict)
         self.assertIn('left', bcs)
         self.assertIn('top', bcs)
-        # Top boundary should have specified head
+        # Top boundary should have specified head h = -0.1
         self.assertEqual(bcs['top']['type'], 'h')
+        self.assertAlmostEqual(bcs['top']['value'], -0.1)
+        # Bottom boundary should have specified head h = -0.3
+        self.assertEqual(bcs['bottom']['type'], 'h')
+        self.assertAlmostEqual(bcs['bottom']['value'], -0.3)
 
     def test_get_soil_parameters(self):
         """Test spatially varying soil parameters."""

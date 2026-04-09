@@ -67,7 +67,7 @@ class CockettRichardsSolution3D(object):
         Returns:
             Initial pressure head h [L]
         """
-        return -3 + 2.9 * exp(5 * (z - self.Lz))
+        return 0.2 * exp(5 * (z - self.Lz)) - 0.3
 
     def get_boundary_conditions(self):
         """Return boundary condition specification.
@@ -83,7 +83,7 @@ class CockettRichardsSolution3D(object):
             'right': {'type': 'flux', 'value': 0.0},
             'front': {'type': 'flux', 'value': 0.0},
             'back': {'type': 'flux', 'value': 0.0},
-            'bottom': {'type': 'flux', 'value': 0.0},
+            'bottom': {'type': 'h', 'value': -0.3},
             'top': {'type': 'h', 'value': -0.1}
         }
 
