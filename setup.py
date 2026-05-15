@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 import sys
 
 script_args = sys.argv[1:]
