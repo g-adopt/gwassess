@@ -89,16 +89,16 @@ class TestTracySolution3D(unittest.TestCase):
         hr = self.solution.hr
         t = 1e6  # Steady state
         # x = 0 face
-        self.assertAlmostEqual(self.solution.pressure_head(0, L/2, L/2, t), hr, places=4)
+        self.assertAlmostEqual(self.solution.pressure_head(0, L / 2, L / 2, t), hr, places=4)
         # y = 0 face
-        self.assertAlmostEqual(self.solution.pressure_head(L/2, 0, L/2, t), hr, places=4)
+        self.assertAlmostEqual(self.solution.pressure_head(L / 2, 0, L / 2, t), hr, places=4)
         # z = 0 (bottom) face
-        self.assertAlmostEqual(self.solution.pressure_head(L/2, L/2, 0, t), hr, places=4)
+        self.assertAlmostEqual(self.solution.pressure_head(L / 2, L / 2, 0, t), hr, places=4)
 
     def test_top_boundary_consistency(self):
         """Test that steady-state solution at z=L matches the top BC."""
         L = self.solution.L
-        x, y = L/4, L/3
+        x, y = L / 4, L / 3
         top_bc = self.solution.steady_state_top_bc(x, y)
         h_top = self.solution.pressure_head(x, y, L, 1e6)
         self.assertAlmostEqual(h_top, top_bc, places=4)
@@ -114,9 +114,9 @@ class TestTracySolution3D(unittest.TestCase):
     def test_transient_approaches_steady_state(self):
         """Test that solution converges to steady state at large times."""
         L = self.solution.L
-        h_early = self.solution.pressure_head(L/2, L/2, L/2, 1e5)
-        h_late = self.solution.pressure_head(L/2, L/2, L/2, 1e6)
-        h_very_late = self.solution.pressure_head(L/2, L/2, L/2, 1e7)
+        h_early = self.solution.pressure_head(L / 2, L / 2, L / 2, 1e5)
+        h_late = self.solution.pressure_head(L / 2, L / 2, L / 2, 1e6)
+        h_very_late = self.solution.pressure_head(L / 2, L / 2, L / 2, 1e7)
         # Solution should be approaching steady state
         self.assertAlmostEqual(h_late, h_very_late, places=4)
         # Early time should be more negative (closer to h_r)
