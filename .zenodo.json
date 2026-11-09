@@ -1,0 +1,26 @@
+{
+  "title": "gwassess: analytical and benchmark reference solutions for groundwater flow",
+  "description": "gwassess is a Python package that implements analytical and reference solutions to the Richards equation in two and three dimensions. It provides the exact solution of the Tracy problem and the set-ups of the Vauclin and Cockett benchmarks, for use in verifying variably saturated groundwater flow solvers.",
+  "upload_type": "software",
+  "license": "LGPL-3.0-or-later",
+  "access_right": "open",
+  "creators": [
+    {
+      "name": "Ghelichkhan, Sia",
+      "affiliation": "The Australian National University",
+      "orcid": "0000-0002-1316-3170"
+    },
+    {
+      "name": "Morrow, Liam",
+      "affiliation": "The Australian National University"
+    }
+  ],
+  "keywords": [
+    "Richards equation",
+    "analytical solutions",
+    "groundwater flow",
+    "unsaturated flow",
+    "benchmarks",
+    "verification"
+  ]
+}
